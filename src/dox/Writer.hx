@@ -1,5 +1,6 @@
 package dox;
 
+import sys.FileSystem;
 import haxe.zip.Entry;
 import haxe.io.Bytes;
 using StringTools;
@@ -10,17 +11,9 @@ class Writer {
 
 	public function new(config:Config) {
 		this.config = config;
-		if (!config.outputPath.endsWith(".zip")) {
-			try {
-				if (!sys.FileSystem.exists(config.outputPath)) {
-					sys.FileSystem.createDirectory(config.outputPath);
-				}
-			} catch (e:Dynamic) {
-				Sys.println('Could not create output directory ${config.outputPath}');
-				Sys.println(Std.string(e));
-				Sys.exit(1);
-			}
-		} else {
+
+		if (config.outputPath.endsWith(".zip"))
+		{
 			zipEntries = new List();
 		}
 	}

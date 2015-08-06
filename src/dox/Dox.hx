@@ -1,8 +1,13 @@
 package dox;
 
+import dox.helper.PathHelper;
+import haxe.rtti.CType.TypeRoot;
 import haxe.io.Path;
 
 class Dox {
+	static private var outputPath: String = "pages";
+    static private var writer: Writer;
+
 	static public function main() {
 		// check if we're running from haxelib (last arg is original working dir)
 		var owd = Sys.getCwd();
@@ -25,7 +30,7 @@ class Dox {
 			["-r", "--document-root"] => function(path:String) throw 'The -r command is obsolete and can be omitted',
 
 			@doc("Set the output path for generated pages")
-			["-o", "--output-path"] => function(path:String) cfg.outputPath = path,
+			["-o", "--output-path"] => function(path:String) outputPath = cfg.outputPath = path,
 
 			@doc("Set the xml input path (file names correspond to platform names)")
 			["-i", "--input-path"] => function(path:String) cfg.xmlPath = path,
@@ -47,6 +52,9 @@ class Dox {
 
 			@doc("Set the package which serves as top-level")
 			["--toplevel-package"] => function(dotPath:String) cfg.toplevelPackage = dotPath,
+
+			@doc("Set the packages for define separate documentation generation (delimiter = ':'")
+			["-p", "--packages-path"] => function(path:String) cfg.packagesPath = path,
 
 			@doc("Set the theme name or path")
 			["-theme"] => function(name:String) {
@@ -109,8 +117,6 @@ class Dox {
 
 		argHandler.parse(sortArgs(args));
 
-		var writer = new Writer(cfg);
-
 		if (!sys.FileSystem.exists(cfg.xmlPath)) {
 			Sys.println('Could not read input path ${cfg.xmlPath}');
 			Sys.exit(1);
@@ -140,33 +146,98 @@ class Dox {
 			parseFile(cfg.xmlPath);
 		}
 
-		Sys.println("Processing types");
-		var proc = new Processor(cfg);
-		var root = proc.process(parser.root);
+		clearOutputPath(outputPath);
 
-		var api = new Api(cfg, proc.infos);
-		var gen = new Generator(api, writer);
+        writer = new Writer(cfg);
 
-		Sys.println("");
-		Sys.println("Generating navigation");
-		gen.generateNavigation(root);
+		if (cfg.packagesPath != "" && sys.FileSystem.exists(cfg.packagesPath))
+		{
+            createHome(cfg);
 
-		Sys.println('Generating to ${cfg.outputPath}');
-		gen.generate(root);
+			var packages: Array<String> = cfg.getPackages();
 
-		Sys.println("");
-		Sys.println('Generated ${api.infos.numGeneratedTypes} types in ${api.infos.numGeneratedPackages} packages');
-
-		for (dir in cfg.resourcePaths) {
-			Sys.println('Copying resources from $dir');
-			writer.copyFrom(dir);
+			for (pack in packages)
+			{
+				if (pack == "") continue;
+				cfg.outputPath = Path.join([outputPath, pack]);
+				cfg.removeAllFilter();
+				cfg.addFilter(pack, true);
+				cfg.pageTitle = pack;
+				generatePages(cfg, parser.root);
+			}
 		}
-
-		writer.finalize();
+		else
+		{
+			generatePages(cfg, parser.root);
+		}
 
 		var elapsed = Std.string(haxe.Timer.stamp() - tStart).substr(0, 5);
 		Sys.println('Done (${elapsed}s)');
 	}
+
+    static private function generatePages(cfg: Config, root: TypeRoot): Void
+    {
+        Sys.println("Processing types");
+        var proc = new Processor(cfg);
+        var root = proc.process(root);
+
+        var api = new Api(cfg, proc.infos);
+        var gen = new Generator(api, writer);
+
+        Sys.println("");
+        Sys.println("Generating navigation");
+        gen.generateNavigation(root);
+
+        Sys.println('Generating to ${cfg.outputPath}');
+        gen.generate(root);
+
+        Sys.println("");
+        Sys.println('Generated ${api.infos.numGeneratedTypes} types in ${api.infos.numGeneratedPackages} packages');
+
+        for (dir in cfg.resourcePaths) {
+            Sys.println('Copying resources from $dir');
+            writer.copyFrom(dir);
+        }
+
+        writer.finalize();
+    }
+
+	static private function clearOutputPath(outputPath: String): Void
+	{
+		try
+		{
+			if (sys.FileSystem.exists(outputPath))
+			{
+				PathHelper.removeDirectory(outputPath);
+			}
+			sys.FileSystem.createDirectory(outputPath);
+		}
+		catch (e:Dynamic)
+		{
+			Sys.println('Could not create output directory ${outputPath}');
+			Sys.println(Std.string(e));
+			Sys.exit(1);
+		}
+	}
+
+    static function createHome(cfg: Config): Void
+    {
+        var templateHomeNav: templo.Template = cfg.loadTemplate("home_nav.mtt");
+        var templateHomeIndex: templo.Template = cfg.loadTemplate("home_index.mtt");
+
+        var nav = templateHomeNav.execute({libs: cfg.getPackages()});
+        var index = templateHomeIndex.execute(null);
+
+        writer.saveContent("nav.js", ~/[\r\n\t]/g.replace(nav, ""));
+        writer.saveContent("index.html", ~/[\r\n\t]/g.replace(index, ""));
+
+        for (dir in cfg.resourcePaths) {
+            Sys.println('Copying resources from $dir');
+            writer.copyFrom(dir);
+        }
+
+        writer.finalize();
+    }
 
 	static function loadTemplates(cfg:Config, path:String) {
 		cfg.addTemplatePath(path);

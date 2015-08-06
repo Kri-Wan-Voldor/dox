@@ -1,5 +1,7 @@
 package dox;
 
+import Map;
+
 @:keep
 class Config {
 	public var theme:Theme;
@@ -17,6 +19,8 @@ class Config {
 	public var defines:Map<String, String>;
 	public var pageTitle:String;
 
+	public var packagesPath:String;
+
 	function set_outputPath(v) {
 		return outputPath = haxe.io.Path.removeTrailingSlashes(v);
 	}
@@ -29,6 +33,7 @@ class Config {
 		platforms = [];
 		resourcePaths = [];
 		toplevelPackage = "";
+		packagesPath = "";
 		defines = new Map();
 		pathFilters = new haxe.ds.GenericStack<Filter>();
 		templatePaths = new haxe.ds.GenericStack<String>();
@@ -36,6 +41,10 @@ class Config {
 
 	public function addFilter(pattern:String, isIncludeFilter:Bool) {
 		pathFilters.add(new Filter(pattern, isIncludeFilter));
+	}
+
+	public function removeAllFilter(): Void	{
+		pathFilters = new haxe.ds.GenericStack<Filter>();
 	}
 
 	public function addTemplatePath(path:String) {
@@ -71,6 +80,20 @@ class Config {
 			buf.add(s);
 		}
 		return buf.toString();
+	}
+
+	public function getPackages(): Array<String>
+	{
+		return sys.io.File.getContent(packagesPath).split(":");
+	}
+
+	public function toString(): String
+	{
+		return 'Config: Theme name => ${theme.name}, rootPath => $rootPath, topLevelPackage => $toplevelPackage,
+				outputPath => $outputPath, xmlPath => $xmlPath, pathFilters => ${pathFilters.toString()},
+				platforms => ${platforms.toString()}, resourcePaths => ${resourcePaths.toString()},
+				templatePaths => ${templatePaths.toString()}, defines => ${defines.toString()},
+				pageTitle => $pageTitle';
 	}
 }
 
