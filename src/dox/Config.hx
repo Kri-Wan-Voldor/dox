@@ -1,5 +1,6 @@
 package dox;
 
+import haxe.io.Path;
 import Map;
 
 @:keep
@@ -8,6 +9,7 @@ class Config {
 	public var rootPath:String;
 	public var toplevelPackage:String;
 
+	public var outputPathRoot(default, set): String;
 	public var outputPath(default, set):String;
 	public var xmlPath(default, set):String;
 	public var pathFilters(default, null):haxe.ds.GenericStack<Filter>;
@@ -19,7 +21,16 @@ class Config {
 	public var defines:Map<String, String>;
 	public var pageTitle:String;
 
-	public var packagesPath:String;
+	public var packageDefinePath:String;
+
+	public var templatePath(default, null): String;
+
+	public var stdScriptRoot(get, never): String;
+	public var docsRoot(get, never): String;
+
+	function set_outputPathRoot(v) {
+		return outputPathRoot = haxe.io.Path.removeTrailingSlashes(v);
+	}
 
 	function set_outputPath(v) {
 		return outputPath = haxe.io.Path.removeTrailingSlashes(v);
@@ -29,14 +40,24 @@ class Config {
 		return xmlPath = haxe.io.Path.removeTrailingSlashes(v);
 	}
 
+	function get_stdScriptRoot(): String {
+		return Path.join(["std"]);
+	}
+
+	function get_docsRoot(): String {
+		return Path.join(["docs"]);
+	}
+
 	public function new() {
+		outputPath = "";
 		platforms = [];
 		resourcePaths = [];
 		toplevelPackage = "";
-		packagesPath = "";
 		defines = new Map();
 		pathFilters = new haxe.ds.GenericStack<Filter>();
 		templatePaths = new haxe.ds.GenericStack<String>();
+		packageDefinePath = "";
+		templatePath = Path.join([Sys.getEnv("PWD"), "template", "std"]);
 	}
 
 	public function addFilter(pattern:String, isIncludeFilter:Bool) {
@@ -84,7 +105,7 @@ class Config {
 
 	public function getPackages(): Array<String>
 	{
-		return sys.io.File.getContent(packagesPath).split(":");
+		return sys.io.File.getContent(packageDefinePath).split(":");
 	}
 
 	public function toString(): String

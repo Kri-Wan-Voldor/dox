@@ -1,5 +1,6 @@
 package dox;
 
+import sys.FileSystem;
 import haxe.rtti.CType;
 using Lambda;
 using StringTools;
@@ -147,11 +148,27 @@ class Api {
 		return config.rootPath + path.split(".").join("/") + ".html";
 	}
 
+	public function pathToStdURL(path:Path): String {
+		return "http://api.haxe.org/" + ~/(\.\.\/)/g.replace(pathToUrl(path), "");
+	}
+
 	/**
 		Checks if `path` corresponds to a known type.
 	**/
 	public function isKnownType(path:Path):Bool {
 		return infos.typeMap.exists(path);
+	}
+
+	public function isExternalType(path:Path): Bool {
+		var ppath: String = haxe.io.Path.join([config.outputPathRoot, config.stdScriptRoot, "bin", "api-latest", ~/(\.\.\/)/g.replace(pathToUrl(path), "")]);
+		var flag: Bool = FileSystem.exists(ppath);
+		//Sys.println('$path, $ppath, $flag');
+		return flag;
+	}
+
+	public function printTypePath(path:Path): Void
+	{
+		Sys.println(path.toString());
 	}
 
 	/**

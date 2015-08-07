@@ -1,11 +1,13 @@
 package dox;
 
+import dox.helper.StdHelper;
+import sys.io.File;
+import sys.FileSystem;
 import dox.helper.PathHelper;
 import haxe.rtti.CType.TypeRoot;
 import haxe.io.Path;
 
 class Dox {
-	static private var outputPath: String = "pages";
     static private var writer: Writer;
 
 	static public function main() {
@@ -23,14 +25,14 @@ class Dox {
 
 		var cfg = new Config();
 
-		cfg.outputPath = "pages";
+		cfg.outputPathRoot = cfg.outputPath = "dox";
 		cfg.xmlPath = "xml";
 
 		var argHandler = hxargs.Args.generate([
 			["-r", "--document-root"] => function(path:String) throw 'The -r command is obsolete and can be omitted',
 
 			@doc("Set the output path for generated pages")
-			["-o", "--output-path"] => function(path:String) outputPath = cfg.outputPath = path,
+			["-o", "--output-path"] => function(path:String) cfg.outputPathRoot = cfg.outputPath = path,
 
 			@doc("Set the xml input path (file names correspond to platform names)")
 			["-i", "--input-path"] => function(path:String) cfg.xmlPath = path,
@@ -54,7 +56,7 @@ class Dox {
 			["--toplevel-package"] => function(dotPath:String) cfg.toplevelPackage = dotPath,
 
 			@doc("Set the packages for define separate documentation generation (delimiter = ':'")
-			["-p", "--packages-path"] => function(path:String) cfg.packagesPath = path,
+			["-p", "--packages-path"] => function(path:String) cfg.packageDefinePath = path,
 
 			@doc("Set the theme name or path")
 			["-theme"] => function(name:String) {
@@ -146,12 +148,20 @@ class Dox {
 			parseFile(cfg.xmlPath);
 		}
 
-		clearOutputPath(outputPath);
+		Sys.println('Clear output folder: ${cfg.outputPathRoot}');
+		PathHelper.clearDir(cfg.outputPathRoot);
 
-        writer = new Writer(cfg);
+		writer = new Writer(cfg);
 
-		if (cfg.packagesPath != "" && sys.FileSystem.exists(cfg.packagesPath))
+		if (cfg.packageDefinePath != "" && sys.FileSystem.exists(cfg.packageDefinePath))
 		{
+			cfg.outputPath = Path.join([cfg.outputPathRoot, cfg.stdScriptRoot]);
+			writer.copyFrom(cfg.templatePath);
+
+			StdHelper.createStdDocumention(cfg);
+
+			cfg.outputPath = Path.join([cfg.outputPathRoot, cfg.docsRoot]);
+
             createHome(cfg);
 
 			var packages: Array<String> = cfg.getPackages();
@@ -159,7 +169,7 @@ class Dox {
 			for (pack in packages)
 			{
 				if (pack == "") continue;
-				cfg.outputPath = Path.join([outputPath, pack]);
+				cfg.outputPath = Path.join([cfg.outputPathRoot, cfg.docsRoot, pack]);
 				cfg.removeAllFilter();
 				cfg.addFilter(pack, true);
 				cfg.pageTitle = pack;
@@ -201,24 +211,6 @@ class Dox {
 
         writer.finalize();
     }
-
-	static private function clearOutputPath(outputPath: String): Void
-	{
-		try
-		{
-			if (sys.FileSystem.exists(outputPath))
-			{
-				PathHelper.removeDirectory(outputPath);
-			}
-			sys.FileSystem.createDirectory(outputPath);
-		}
-		catch (e:Dynamic)
-		{
-			Sys.println('Could not create output directory ${outputPath}');
-			Sys.println(Std.string(e));
-			Sys.exit(1);
-		}
-	}
 
     static function createHome(cfg: Config): Void
     {
