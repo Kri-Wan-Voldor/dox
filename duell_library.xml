@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<library xmlns="duell">
+    <haxelib name="hxparse" version="development"/>
+    <haxelib name="hxtemplo" version="master"/>
+    <haxelib name="hxargs" version="3.0.0"/>
+    <haxelib name="markdown" version="1.0.0"/>
+</library>
