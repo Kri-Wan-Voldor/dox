@@ -20,10 +20,12 @@
 </macro>
 
 <macro name="printLinkedPath(path, params)">
-	::if api.isExternalType(path)::
+	::if api.isStdType(path)::
 	    <a class="type" title="::api.getSentenceDesc(api.resolveType(path))::" ::attr href api.pathToStdURL(path)::>::api.getPathName(path)::</a>
 	::elseif api.isKnownType(path)::
-    		<a class="type" title="::api.getSentenceDesc(api.resolveType(path))::" ::attr href api.pathToUrl(path)::>::api.getPathName(path)::</a>
+    	<a class="type" title="::api.getSentenceDesc(api.resolveType(path))::" ::attr href api.pathToUrl(path)::>::api.getPathName(path)::</a>
+    ::elseif api.isDuelllibType(path)::
+        <a class="type" title="::api.getSentenceDesc(api.resolveType(path))::" ::attr href api.pathToDuelllib(path)::>::api.getPathName(path)::</a>
     ::else::
 		<span class="type">::api.getPathName(path)::</span>
 	::end::

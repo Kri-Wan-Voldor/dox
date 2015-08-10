@@ -58,6 +58,9 @@ class Dox {
 			@doc("Set the packages for define separate documentation generation (delimiter = ':'")
 			["-p", "--packages-path"] => function(path:String) cfg.packageDefinePath = path,
 
+			@doc("Rebuilds the Haxe Std in the output folder (in the specified path)")
+			["--std"] => function(_) cfg.rebuildStd = true,
+
 			@doc("Set the theme name or path")
 			["-theme"] => function(name:String) {
 				function setTheme(path:String) {
@@ -148,21 +151,33 @@ class Dox {
 			parseFile(cfg.xmlPath);
 		}
 
-		Sys.println('Clear output folder: ${cfg.outputPathRoot}');
-		PathHelper.clearDir(cfg.outputPathRoot);
+		var docsOutput: String = Path.join([cfg.outputPathRoot, cfg.docsRoot]);
+		Sys.println('Clear docs output folder: $docsOutput');
+		PathHelper.clearDir(docsOutput);
 
 		writer = new Writer(cfg);
 
 		if (cfg.packageDefinePath != "" && sys.FileSystem.exists(cfg.packageDefinePath))
 		{
-			cfg.outputPath = Path.join([cfg.outputPathRoot, cfg.stdScriptRoot]);
-			writer.copyFrom(cfg.templatePath);
+			if (!FileSystem.exists(Path.join([cfg.outputPathRoot, cfg.stdScriptRoot, "bin", "api-latest"])))
+			{
+				Sys.println("Haxe Std documentation generation forced");
+				cfg.rebuildStd = true;
+			}
 
-			StdHelper.createStdDocumention(cfg);
+			if (cfg.rebuildStd)
+			{
+				cfg.outputPath = Path.join([cfg.outputPathRoot, cfg.stdScriptRoot]);
+				writer.copyFrom(cfg.templatePath);
+
+				StdHelper.createStdDocumention(cfg);
+			}
 
 			cfg.outputPath = Path.join([cfg.outputPathRoot, cfg.docsRoot]);
 
             createHome(cfg);
+
+			cfg.homePath += "../";
 
 			var packages: Array<String> = cfg.getPackages();
 

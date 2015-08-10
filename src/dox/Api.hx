@@ -1,5 +1,8 @@
 package dox;
 
+import dox.helper.PathHelper;
+import dox.helper.PathHelper;
+import dox.helper.PathHelper;
 import sys.FileSystem;
 import haxe.rtti.CType;
 using Lambda;
@@ -141,6 +144,17 @@ class Api {
 		return sentence.match(stripped) ? sentence.matched(1) : "";
 	}
 
+	public function getMainPackage(path:Path): String {
+		return path.split(".")[0];
+	}
+
+	/**
+	    Turns a dot path (package path) into a normal system path with the system specific slash type
+	**/
+	public function packagePathToPath(path:Path): String {
+		return path.split(".").join(PathHelper.getSystemSlashType());
+	}
+
 	/**
 		Turns a dot-path into a slash-path and appends ".html".
 	**/
@@ -149,7 +163,12 @@ class Api {
 	}
 
 	public function pathToStdURL(path:Path): String {
-		return "http://api.haxe.org/" + ~/(\.\.\/)/g.replace(pathToUrl(path), "");
+		return "http://api.haxe.org/" + PathHelper.removeBackwardsSigns(pathToUrl(path));
+	}
+
+	public function pathToDuelllib(path:Path): String {
+		var libPath: String = haxe.io.Path.join([getMainPackage(path), PathHelper.removeBackwardsSigns(pathToUrl(path))]);
+		return config.homePath + config.rootPath + libPath;
 	}
 
 	/**
@@ -159,16 +178,19 @@ class Api {
 		return infos.typeMap.exists(path);
 	}
 
-	public function isExternalType(path:Path): Bool {
-		var ppath: String = haxe.io.Path.join([config.outputPathRoot, config.stdScriptRoot, "bin", "api-latest", ~/(\.\.\/)/g.replace(pathToUrl(path), "")]);
-		var flag: Bool = FileSystem.exists(ppath);
-		//Sys.println('$path, $ppath, $flag');
-		return flag;
+	/**
+		Checks if `path` corresponds to a Haxe Std type.
+	**/
+	public function isStdType(path:Path): Bool {
+		var stdRoot: String = haxe.io.Path.join([config.outputPathRoot, config.stdScriptRoot, "bin", "api-latest"]);
+		return FileSystem.exists(haxe.io.Path.join([stdRoot, PathHelper.removeBackwardsSigns(pathToUrl(path))]));
 	}
 
-	public function printTypePath(path:Path): Void
-	{
-		Sys.println(path.toString());
+	/**
+		Checks if `path` corresponds to a duell lib type.
+	**/
+	public function isDuelllibType(path:Path): Bool {
+		return true; // TODO Currently everything unknown is linked as DuellLib
 	}
 
 	/**

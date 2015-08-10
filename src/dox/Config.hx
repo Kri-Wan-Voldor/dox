@@ -7,6 +7,7 @@ import Map;
 class Config {
 	public var theme:Theme;
 	public var rootPath:String;
+	public var homePath:String;
 	public var toplevelPackage:String;
 
 	public var outputPathRoot(default, set): String;
@@ -28,6 +29,8 @@ class Config {
 	public var stdScriptRoot(get, never): String;
 	public var docsRoot(get, never): String;
 
+	public var rebuildStd: Bool;
+
 	function set_outputPathRoot(v) {
 		return outputPathRoot = haxe.io.Path.removeTrailingSlashes(v);
 	}
@@ -41,14 +44,15 @@ class Config {
 	}
 
 	function get_stdScriptRoot(): String {
-		return Path.join(["std"]);
+		return "std";
 	}
 
 	function get_docsRoot(): String {
-		return Path.join(["docs"]);
+		return "docs";
 	}
 
 	public function new() {
+		homePath = "";
 		outputPath = "";
 		platforms = [];
 		resourcePaths = [];
@@ -58,6 +62,7 @@ class Config {
 		templatePaths = new haxe.ds.GenericStack<String>();
 		packageDefinePath = "";
 		templatePath = Path.join([Sys.getEnv("PWD"), "template", "std"]);
+		rebuildStd = false;
 	}
 
 	public function addFilter(pattern:String, isIncludeFilter:Bool) {

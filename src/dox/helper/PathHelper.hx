@@ -29,6 +29,16 @@ import sys.FileSystem;
 
 class PathHelper
 {
+    static public function getSystemSlashType(): String
+    {
+       return if (Sys.systemName() == "Windows") "\\" else "/";
+    }
+
+    static public function removeBackwardsSigns(str: String): String
+    {
+        return ~/(\.\.\/)/g.replace(Path.normalize(str), "");
+    }
+
     static public function clearDir(path: String): Void
     {
         try
